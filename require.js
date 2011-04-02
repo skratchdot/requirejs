@@ -697,6 +697,8 @@ var require, define;
             }
         }
 
+        var checkLoadedDepth = 0;
+
         function forceExec(manager, traced) {
             if (manager.isDone) {
                 return undefined;
@@ -810,7 +812,27 @@ var require, define;
                     forceExec(manager, {});
                 }
 
+                if (checkLoadedDepth > 10) {
+                    console.error('WaitCount is: ' + context.waitCount);
+                    for (i = 0; (manager = waitAry[i]); i++) {
+                        if (!manager.isDone) {
+                            var missing = [], jDep;
+                            for (var j = 0; (jDep = manager.depArray[j]); j++) {
+                                if (!(jDep in manager.deps)) {
+                                    missing.push(jDep);
+                                }
+                            }
+                            console.error('fullName: ' + manager.fullName + ' expecting ' + manager.depMax +
+                                          ' received: ' + manager.depCount + ' waiting for: ' + missing.join(','));
+                        }
+                    }
+                    throw new Error('checkLoaded stack exceeded');
+                }
+
+                checkLoadedDepth += 1;
                 checkLoaded();
+                checkLoadedDepth -= 1;
+
                 return undefined;
             }
 
